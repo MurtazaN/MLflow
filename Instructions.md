@@ -207,13 +207,13 @@ with mlflow.start_run(run_name='untuned_random_forest'):
 ```
 
 ### Explanation:
-We create a random forest classifier model using scikit-learn's RandomForestClassifier.
-The model is trained on the training data (X_train, y_train).
-We log various information using MLflow, including model parameters (n_estimators), the Area Under the ROC Curve (AUC) metric, and the model itself.
-A wrapper class SklearnModelWrapper is used to make predictions using predict_proba, which returns class probabilities.
-We also define a signature to validate inputs when the model is deployed.
-Expected Output:
-Model training details and metrics (e.g., AUC) will be logged in the MLflow run.
+We create a random forest classifier model using scikit-learn's RandomForestClassifier.\
+The model is trained on the training data (X_train, y_train).\
+We log various information using MLflow, including model parameters (n_estimators), the Area Under the ROC Curve (AUC) metric, and the model itself.\
+A wrapper class SklearnModelWrapper is used to make predictions using predict_proba, which returns class probabilities.\
+We also define a signature to validate inputs when the model is deployed.\
+Expected Output:\
+Model training details and metrics (e.g., AUC) will be logged in the MLflow run.\
 The trained model will be saved for future use.
 
 
