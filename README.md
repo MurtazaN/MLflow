@@ -10,22 +10,45 @@ Using MLflow for experimenting, tracking, and logging models.
 source .mlflow-lab-3.11/bin/activate
 ```
 
-### 2. Run the Pipeline
+### 2. Install the Package (first time only)
+
+```bash
+pip install -e .
+```
+
+### 3. Run the Pipeline
 
 ```bash
 ./run.sh
 ```
 
-This single command does everything:
-- Cleans old MLflow data
+This single command:
+- Cleans old MLflow data (mlruns, mlflow.db, mlartifacts)
 - Starts the MLflow UI in the background
+- Loads and prepares wine quality data
 - Trains a baseline Random Forest model
-- Runs an XGBoost hyperparameter sweep (96 trials via Hyperopt + SparkTrials)
+- Runs an XGBoost hyperparameter sweep (10 trials via Hyperopt)
 - Registers and promotes the best model to Production
 - Serves the production model and runs real-time inference
-- Prints all results to your terminal
 
-> **Requires:** `pyspark` installed in your venv (`pip install pyspark`)
+---
+
+## Project Structure
+
+```
+MLflow/
+├── src/
+│   ├── __init__.py        # Package init
+│   ├── data_prep.py       # Data loading and train/val/test splits
+│   ├── train_model.py     # RF and XGBoost training functions
+│   ├── run_pipeline.py    # Pipeline orchestration
+│   └── inference.py       # Real-time inference client
+├── data/                  # Wine quality CSV files
+├── logs/                  # Pipeline, MLflow UI, and model server logs
+├── run.sh                 # Entry point — orchestrates everything
+├── pyproject.toml         # Setuptools config for editable install
+└── starter.ipynb          # Original reference notebook
+```
 
 ---
 
@@ -33,41 +56,18 @@ This single command does everything:
 
 ### MLflow UI — http://127.0.0.1:5000
 
-All ML results (experiments, metrics, models) are here:
-
-1. **Experiments → Runs** — Click on runs to see parameters, metrics, and artifacts
-2. **"untuned_random_forest"** — The baseline Random Forest run
-3. **"xgboost_models"** — Click this parent run, then expand to see ~96 nested child runs (one per hyperparameter trial)
-4. **Model Registry** — Click "Models" in the sidebar to see registered model versions and stage transitions
+1. **Runs** — `untuned_random_forest` (RF baseline), `xgboost_models` (click to see nested trials), `best_xgboost` (production model)
+2. **Models** — 2 logged models: `random_forest_model` and `xgboost_model`
+3. **Model Registry** — Click "Model registry" in sidebar to see version history and stage transitions
 
 > **Tip:** To search for runs, use MLflow filter syntax:
 > `tags.mlflow.runName = "xgboost_models"` (not free text)
 
-### Spark UI — http://127.0.0.1:4040
-
-Spark job monitoring (only available while the pipeline is actively running). Shows task progress and DAG visualizations.
-
 ---
 
-## Project Files
-
-| File              | Purpose                                                    |
-|-------------------|------------------------------------------------------------|
-| `train_model.py`  | Baseline Random Forest training & registration             |
-| `run_pipeline.py` | Full pipeline: RF → XGBoost sweep → model promotion        |
-| `inference.py`    | Real-time inference against the served production model    |
-| `run.sh`          | Entry point — orchestrates everything                      |
-| `pipeline.log`    | Spark/MLflow/XGBoost warnings from the pipeline            |
-| `mlflow_ui.log`   | MLflow UI server output                                    |
-| `model_server.log`| MLflow model server output                                 |
-
----
-
-## Manual Operation (if needed)
+## Manual Operation
 
 ### Serve the Model
-
-In a new terminal:
 
 ```bash
 source .mlflow-lab-3.11/bin/activate
@@ -75,12 +75,18 @@ export MLFLOW_TRACKING_URI=http://127.0.0.1:5000
 mlflow models serve -m "models:/wine_quality/production" -p 5001 --env-manager=local
 ```
 
-### Test Predictions
+### Run Inference
+
+```bash
+python3 src/inference.py
+```
+
+### Test with curl
 
 ```bash
 curl -X POST http://127.0.0.1:5001/invocations \
   -H "Content-Type: application/json" \
-  -d '{"dataframe_split": {"columns": ["fixed_acidity","volatile_acidity","citric_acid","residual_sugar","chlorides","free_sulfur_dioxide","total_sulfur_dioxide","density","pH","sulphates","alcohol","is_red"], "data": [[7.4, 0.7, 0.0, 1.9, 0.076, 11.0, 34.0, 0.9978, 3.51, 0.56, 9.4, 1]]}}'
+  -d '{"dataframe_split": {"columns": ["fixed_acidity","volatile_acidity","citric_acid","residual_sugar","chlorides","free_sulfur_dioxide","total_sulfur_dioxide","density","pH","sulphates","alcohol","is_red"], "data": [[7.0, 0.25, 0.36, 1.6, 0.034, 30.0, 110.0, 0.9906, 3.24, 0.50, 12.8, 0]]}}'
 ```
 
 ### Stop MLflow UI

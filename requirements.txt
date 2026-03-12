@@ -1,4 +1,4 @@
-mlflow
+mlflow==3.10.1
 scikit-learn
 hyperopt
 pandas
@@ -7,4 +7,4 @@ seaborn
 matplotlib
 xgboost==1.7.6
 pyspark
-ipykernel
+#ipykernel

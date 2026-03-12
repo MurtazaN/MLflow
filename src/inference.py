@@ -8,13 +8,17 @@ Requires model server running:
 Usage: python3 inference.py
 """
 
+import os
 import requests
 
-url = 'http://localhost:5001/invocations'
+# app = FastAPI()
 
+url = os.environ.get('INFERENCE_URL', 'http://localhost:5001/invocations')
+
+# 1300 samples
 #data_dict = {"dataframe_split": X_test.to_dict(orient='split')}
 
-# low
+# low quality
 # data_dict = {
 #     "dataframe_split": {
 #         "columns": [
@@ -43,7 +47,6 @@ data_dict = {
 response = requests.post(url, json=data_dict)
 prediction = response.json()["predictions"][0]
 
-# print density value
 print(f"Density: {data_dict['dataframe_split']['data'][0][7]}")
 print(f"Alcohol: {data_dict['dataframe_split']['data'][0][10]}")
 print(f"Probability of high quality: {prediction:.4f}")
