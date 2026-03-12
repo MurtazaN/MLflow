@@ -19,7 +19,8 @@ from mlflow.models.signature import infer_signature
 from mlflow.tracking import MlflowClient
 from hyperopt import fmin, tpe, hp, Trials, SparkTrials, STATUS_OK
 from hyperopt.pyll import scope
-from train_model import train
+from pyspark.sql import SparkSession
+from src.train_model import train
 
 
 def main():
@@ -185,7 +186,7 @@ def main():
     # ============================================================
     # STEP 7: Batch Inference with Spark
     # ============================================================
-    from pyspark.sql import SparkSession
+    # SparkSession imported at top of file
 
     spark = SparkSession.builder \
         .appName("MLflow Integration") \

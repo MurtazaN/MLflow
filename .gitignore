@@ -5,9 +5,13 @@ data/requirements.txt
 mlruns/
 mlartifacts/
 
+logs/
 *.log
 
 # add mlflow.db to gitignore
 mlflow.db
 
 .DS_Store
+
+# setuptools
+*.egg-info/
