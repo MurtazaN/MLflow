@@ -3,7 +3,11 @@
 data/requirements.txt
 
 mlruns/
-mlflow.db
 mlartifacts/
 
 *.log
+
+# add mlflow.db to gitignore
+mlflow.db
+
+.DS_Store

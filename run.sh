@@ -9,7 +9,8 @@ echo "=========================================="
 
 # 1. Clean old MLflow data
 echo "Cleaning old MLflow data..."
-rm -rf mlruns mlflow.db
+rm -rf mlruns mlflow.db 
+rm -rf mlartifacts
 
 # 2. Start MLflow UI in background
 echo "Starting MLflow UI (background)..."

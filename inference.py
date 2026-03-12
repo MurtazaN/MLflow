@@ -14,6 +14,20 @@ url = 'http://localhost:5001/invocations'
 
 #data_dict = {"dataframe_split": X_test.to_dict(orient='split')}
 
+# low
+# data_dict = {
+#     "dataframe_split": {
+#         "columns": [
+#             "fixed_acidity", "volatile_acidity", "citric_acid",
+#             "residual_sugar", "chlorides", "free_sulfur_dioxide",
+#             "total_sulfur_dioxide", "density", "pH", "sulphates",
+#             "alcohol", "is_red"
+#         ],
+#         "data": [[7.4, 0.7, 0.0, 1.9, 0.076, 11.0, 34.0, 0.0000009978, 3.51, 0.56, 1000.4, 1]]
+#     }
+# }
+
+# high quality
 data_dict = {
     "dataframe_split": {
         "columns": [
@@ -22,7 +36,7 @@ data_dict = {
             "total_sulfur_dioxide", "density", "pH", "sulphates",
             "alcohol", "is_red"
         ],
-        "data": [[7.4, 0.7, 0.0, 1.9, 0.076, 11.0, 34.0, 0.0000009978, 3.51, 0.56, 1000.4, 1]]
+        "data": [[7.0, 0.25, 0.36, 1.6, 0.034, 30.0, 110.0, 0.9906, 3.24, 0.50, 12.8, 0]]
     }
 }
 

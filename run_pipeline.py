@@ -100,7 +100,8 @@ def main():
             val_dm = xgb.DMatrix(data=_X_val, label=_y_val)
             booster = xgb.train(
                 params=params, dtrain=train_dm, num_boost_round=1000,
-                evals=[(val_dm, "validation")], early_stopping_rounds=50
+                evals=[(val_dm, "validation")], early_stopping_rounds=50,
+                verbose_eval=False
             )
             validation_predictions = booster.predict(val_dm)
             auc_score = roc_auc_score(_y_val, validation_predictions)
@@ -145,7 +146,8 @@ def main():
 
         best_booster = xgb.train(
             params=best_params, dtrain=train_dm, num_boost_round=1000,
-            evals=[(val_dm, "validation")], early_stopping_rounds=50
+            evals=[(val_dm, "validation")], early_stopping_rounds=50,
+            verbose_eval=False # stops logs # TODO: Fix - so logs can be generated in a proper log file
         )
 
         test_predictions = best_booster.predict(test_dm)
@@ -153,7 +155,7 @@ def main():
         mlflow.log_metric('auc', xgb_auc)
 
         signature = infer_signature(X_train, best_booster.predict(train_dm))
-        mlflow.xgboost.log_model(best_booster, "model", signature=signature)
+        mlflow.xgboost.log_model(best_booster, "xgboost_model", signature=signature)
 
         print(f"Best XGBoost AUC (test set): {xgb_auc}")
 
@@ -161,7 +163,7 @@ def main():
     # STEP 6: Update production model with best XGBoost model
     # ============================================================
     new_model_version = mlflow.register_model(
-        f"runs:/{best_run.info.run_id}/model", model_name
+        f"runs:/{best_run.info.run_id}/xgboost_model", model_name
     )
     time.sleep(10)
 
