@@ -9,27 +9,37 @@
 # Dependency changes: Rebuild with --build flag.
 
 services:
-  # MLflow Tracking Server
+  # MLflow Tracking Server (official image + SQLite backend)
   mlflow-server:
-    build: .
-    command: mlflow ui --host 0.0.0.0
+    image: ghcr.io/mlflow/mlflow:v${MLFLOW_VERSION}
+    environment:
+      # Allowed hosts
+      MLFLOW_SERVER_ALLOWED_HOSTS: ${MLFLOW_SERVER_ALLOWED_HOSTS}
+    command: >
+      mlflow server
+        --backend-store-uri sqlite:///app/mlflow-data/mlflow.db
+        --default-artifact-root /app/mlartifacts
+        --host 0.0.0.0
+        --port 5000
+        --allowed-hosts ${MLFLOW_SERVER_ALLOWED_HOSTS}
     ports:
       - "5000:5000"
     volumes:
-      - ./mlartifacts:/app/mlartifacts
       - mlflow-data:/app/mlflow-data
+      - ./mlartifacts:/app/mlartifacts
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   # Training Pipeline
   pipeline:
     build: .
     command: python src/run_pipeline.py
     volumes:
-      - ./src:/app/src        # live code — no rebuild on changes
+      - ./src:/app/src
       - ./data:/app/data
       - ./mlartifacts:/app/mlartifacts
       - ./logs:/app/logs
@@ -40,15 +50,11 @@ services:
       mlflow-server:
         condition: service_healthy
 
-  # Model Serving (starts after pipeline completes)
+  # Model Serving
   model-server:
     build: .
     command: >
-      sh -c "sleep 5 &&
-             mlflow models serve
-             -m 'models:/wine_quality/production'
-             -p 5001 --host 0.0.0.0
-             --env-manager=local"
+      mlflow models serve -m "models:/wine_quality/production" -p 5001 --host 0.0.0.0 --env-manager=local
     ports:
       - "5001:5001"
     volumes:
@@ -60,7 +66,7 @@ services:
       pipeline:
         condition: service_completed_successfully
 
-  # Real-time Inference (runs after model server is ready)
+  # Real-time Inference
   inference:
     build: .
     command: >

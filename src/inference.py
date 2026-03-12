@@ -8,9 +8,12 @@ Requires model server running:
 Usage: python3 inference.py
 """
 
+import os
 import requests
 
-url = 'http://localhost:5001/invocations'
+# app = FastAPI()
+
+url = os.environ.get('INFERENCE_URL', 'http://localhost:5001/invocations')
 
 # 1300 samples
 #data_dict = {"dataframe_split": X_test.to_dict(orient='split')}

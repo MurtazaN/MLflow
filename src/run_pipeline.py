@@ -4,6 +4,7 @@ Pipeline orchestration — loads data, calls training functions, manages model l
 Usage: ./run.sh  (or: python3 src/run_pipeline.py with mlflow ui running separately)
 """
 
+import os
 import mlflow
 from sklearn.metrics import roc_auc_score
 from mlflow.tracking import MlflowClient
@@ -13,7 +14,8 @@ from src.train_model import train_rf, train_xgboost
 
 
 def main():
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
+    mlflow.set_tracking_uri(tracking_uri)
     client = MlflowClient()
 
     # ============================================================
