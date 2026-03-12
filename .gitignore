@@ -1,3 +1,9 @@
 .mlflow-lab-3.11
 
 data/requirements.txt
+
+mlruns/
+mlflow.db
+mlartifacts/
+
+*.log
