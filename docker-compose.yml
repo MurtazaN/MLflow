@@ -67,10 +67,12 @@ services:
         condition: service_completed_successfully
 
   # Real-time Inference
-  inference:
+  backend-api:
     build: .
     command: >
-      sh -c "sleep 10 && python src/inference.py"
+      uvicorn src.fastapi-app:app --host 0.0.0.0 --port 5002
+    ports:
+      - "5002:5002"
     volumes:
       - ./src:/app/src
     environment:

@@ -6,5 +6,7 @@ numpy
 seaborn
 matplotlib
 xgboost==1.7.6
-pyspark
+# pyspark
 #ipykernel
+fastapi
+uvicorn
