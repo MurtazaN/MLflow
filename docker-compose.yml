@@ -1,0 +1,77 @@
+# Docker Compose for MLflow Wine Quality Pipeline
+#
+# Usage:
+#   docker compose up --build    (first time or after dependency changes)
+#   docker compose up            (subsequent runs — uses cached image + volume-mounted code)
+#   docker compose down          (stop everything)
+#
+# Code changes: No rebuild needed — source code is volume-mounted.
+# Dependency changes: Rebuild with --build flag.
+
+services:
+  # MLflow Tracking Server
+  mlflow-server:
+    build: .
+    command: mlflow ui --host 0.0.0.0
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlartifacts:/app/mlartifacts
+      - mlflow-data:/app/mlflow-data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Training Pipeline
+  pipeline:
+    build: .
+    command: python src/run_pipeline.py
+    volumes:
+      - ./src:/app/src        # live code — no rebuild on changes
+      - ./data:/app/data
+      - ./mlartifacts:/app/mlartifacts
+      - ./logs:/app/logs
+      - mlflow-data:/app/mlflow-data
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow-server:5000
+    depends_on:
+      mlflow-server:
+        condition: service_healthy
+
+  # Model Serving (starts after pipeline completes)
+  model-server:
+    build: .
+    command: >
+      sh -c "sleep 5 &&
+             mlflow models serve
+             -m 'models:/wine_quality/production'
+             -p 5001 --host 0.0.0.0
+             --env-manager=local"
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./mlartifacts:/app/mlartifacts
+      - mlflow-data:/app/mlflow-data
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow-server:5000
+    depends_on:
+      pipeline:
+        condition: service_completed_successfully
+
+  # Real-time Inference (runs after model server is ready)
+  inference:
+    build: .
+    command: >
+      sh -c "sleep 10 && python src/inference.py"
+    volumes:
+      - ./src:/app/src
+    environment:
+      INFERENCE_URL: http://model-server:5001/invocations
+    depends_on:
+      model-server:
+        condition: service_started
+
+volumes:
+  mlflow-data:
