@@ -6,6 +6,30 @@ Run the MLflow Wine Quality pipeline using Docker Compose.
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
 
+## Environment File Setup
+
+Create a `.env` file in the project root (not tracked by git):
+
+```bash
+# .env
+MLFLOW_VERSION=3.10.1
+MLFLOW_SERVER_ALLOWED_HOSTS=mlflow-server,mlflow-server:5000,localhost,localhost:5000,0.0.0.0
+```
+
+| Variable | Purpose |
+|----------|---------|
+| `MLFLOW_VERSION` | MLflow version for the tracking server Docker image (must match `requirements.txt`) |
+| `MLFLOW_SERVER_ALLOWED_HOSTS` | Hosts allowed to connect to the MLflow tracking server |
+
+## Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| `mlflow-server` | 5000 | MLflow tracking server (official image + SQLite) |
+| `pipeline` | — | Trains RF + XGBoost, registers models, then exits |
+| `model-server` | 5001 | Serves the production model via MLflow |
+| `backend-api` | 5002 | FastAPI inference service (`src/fastapi-app.py`) |
+
 ## Quick Start
 
 ```bash
@@ -13,33 +37,46 @@ Run the MLflow Wine Quality pipeline using Docker Compose.
 docker compose up --build
 ```
 
-This starts 4 services in order:
-1. **mlflow-server** — MLflow UI on http://localhost:5000
-2. **pipeline** — Trains RF + XGBoost, registers models
-3. **model-server** — Serves the production model on port 5001
-4. **inference** — Sends a test sample and prints the prediction
+Startup order (handled automatically by `depends_on`):
+
+1. **mlflow-server** starts → healthcheck passes
+2. **pipeline** runs → trains models, registers to MLflow, exits
+3. **model-server** starts → serves the production model
+4. **backend-api** starts → FastAPI app on http://localhost:5002
+
+## Accessing the Services
+
+| URL | What you see |
+|-----|-------------|
+| http://localhost:5000 | MLflow UI — experiments, runs, model registry |
+| http://localhost:5002 | FastAPI browser UI — wine quality predictions |
+| http://localhost:5002/docs | FastAPI auto-generated Swagger docs |
+
+### Testing the API
+
+```bash
+# Browser UI
+open http://localhost:5002
+
+# JSON API
+curl -X POST http://localhost:5002/predict
+```
 
 ## Commands
 
 | Command | What it does |
 |---------|-------------|
-| `docker compose up --build` | Build images + run everything (first time or after dependency changes) |
-| `docker compose up` | Run everything (no rebuild — uses cached images) |
-| `docker compose up -d` | Run in background (detached mode) |
+| `docker compose up --build` | Build images + run everything (first time / dependency changes) |
+| `docker compose up` | Run everything (no rebuild) |
+| `docker compose up -d` | Run in background (detached) |
 | `docker compose logs -f pipeline` | Follow logs for a specific service |
 | `docker compose logs` | View all logs |
 | `docker compose down` | Stop and remove all containers |
 | `docker compose down -v` | Stop + remove containers AND volumes (full cleanup) |
 
-## After Running
-
-- **MLflow UI** — http://localhost:5000 (stays running until `docker compose down`)
-- **Model Server** — http://localhost:5001/invocations (POST only)
-- **Inference** — Check output with `docker compose logs inference`
-
 ## Code Changes
 
-**No rebuild needed for code changes** — `src/` is volume-mounted into the containers, so your local edits are reflected immediately. Just run:
+**No rebuild needed for code changes** — `src/` is volume-mounted. Just restart:
 
 ```bash
 docker compose down
@@ -58,11 +95,11 @@ docker compose up --build
 # Only start MLflow UI
 docker compose up mlflow-server
 
-# Run pipeline only (starts mlflow-server automatically via depends_on)
+# Run pipeline only (starts mlflow-server automatically)
 docker compose up pipeline
 
-# Run inference against an already-running model server
-docker compose up inference
+# Start model server + FastAPI after pipeline has run
+docker compose up model-server backend-api
 ```
 
 ## Cleanup
@@ -71,7 +108,7 @@ docker compose up inference
 # Stop everything
 docker compose down
 
-# Stop + delete all data (MLflow DB, artifacts, logs)
+# Full cleanup (containers + volumes + local artifacts)
 docker compose down -v
 rm -rf mlartifacts logs
 ```
@@ -80,8 +117,10 @@ rm -rf mlartifacts logs
 
 | Issue | Fix |
 |-------|-----|
-| Port 5000 already in use | `kill $(lsof -t -i:5000)` or `docker compose down` first |
-| Port 5001 already in use | `kill $(lsof -t -i:5001)` or `docker compose down` first |
-| Pipeline can't reach MLflow | Check `docker compose logs mlflow-server` — healthcheck may be failing |
-| Model server fails to start | Pipeline may not have finished — check `docker compose logs pipeline` |
-| Stale containers | `docker compose down -v && docker compose up --build` |
+| Port already in use | `kill $(lsof -t -i:5000)` or `docker compose down` first |
+| mlflow-server unhealthy | Check `docker compose logs mlflow-server` — may need longer start_period |
+| Pipeline can't reach MLflow | Verify MLFLOW_SERVER_ALLOWED_HOSTS in `.env` includes the service name |
+| Model server fails | Pipeline may not have finished — check `docker compose logs pipeline` |
+| Version mismatch errors | Ensure `MLFLOW_VERSION` in `.env` matches version in `requirements.txt` |
+| `.env` not found | Create it — see [Environment File Setup](#environment-file-setup) above |
+| Stale state | `docker compose down -v && docker compose up --build` |

@@ -16,7 +16,7 @@ import requests
 url = os.environ.get('INFERENCE_URL', 'http://localhost:5001/invocations')
 
 # 1300 samples
-#data_dict = {"dataframe_split": X_test.to_dict(orient='split')}
+# data_dict = {"dataframe_split": X_test.to_dict(orient='split')}
 
 # low quality
 # data_dict = {

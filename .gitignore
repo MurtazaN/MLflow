@@ -1,22 +1,26 @@
-venv/
-.venv/
-
+# Environment variables
 .env
 
+# Virtual environments
+venv/
+.venv/
 .mlflow-lab-3.11
 
 data/requirements.txt
 
+# MLflow tracking data
 mlruns/
 mlartifacts/
+mlflow.db
 
 logs/
 *.log
-
-# add mlflow.db to gitignore
-mlflow.db
 
 .DS_Store
 
 # setuptools
 *.egg-info/
+
+# python
+__pycache__/
+*.pyc
